@@ -58,7 +58,7 @@ if (!isToolInAttestScope(toolName)) {
 - `getAttestScope(cwd?)` — returns `scope` array; `[]` if no manifest. Cached per cwd.
 - `isToolInAttestScope(toolName, cwd?, options?)` — true only when the tool is in a non-empty scope. Missing, invalid, and empty manifests fail closed.
 
-Applications migrating from the pre-1.1 permissive behavior may opt in
+Applications migrating from the pre-2.0 permissive behavior may opt in
 temporarily and explicitly:
 
 ```ts
