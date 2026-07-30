@@ -15,3 +15,5 @@ nxtlinq/
 # POC / local demo workspace (optional)
 poc-workspace/
 poc-demo-workspace/
+
+.npmrc
