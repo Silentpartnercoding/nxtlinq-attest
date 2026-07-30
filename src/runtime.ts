@@ -12,6 +12,15 @@ const MANIFEST_BASENAME = 'agent.manifest.json';
 
 const scopeCache = new Map<string, string[] | null>();
 
+export interface AttestScopeOptions {
+  /**
+   * Preserve the pre-1.1 permissive behavior for applications that explicitly
+   * need it. Disabled by default so missing, invalid, and empty manifests fail
+   * closed.
+   */
+  allowEmptyScope?: boolean;
+}
+
 function getManifestPath(cwd: string): string {
   return join(cwd, NXTLINQ_DIR, MANIFEST_BASENAME);
 }
@@ -44,12 +53,18 @@ export function getAttestScope(cwd?: string): string[] {
 /**
  * Check if a tool is allowed by the attested manifest scope.
  * Scope entries are typically "tool:ToolName"; we accept either "ToolName" or "tool:ToolName".
- * If no scope is defined (no manifest or empty scope), returns true for backward compatibility.
+ * Missing, invalid, and empty scopes fail closed by default.
+ * Set options.allowEmptyScope only when intentionally preserving the legacy
+ * permissive behavior during migration.
  */
-export function isToolInAttestScope(toolName: string, cwd?: string): boolean {
+export function isToolInAttestScope(
+  toolName: string,
+  cwd?: string,
+  options: AttestScopeOptions = {},
+): boolean {
   const scope = getAttestScope(cwd);
   if (scope.length === 0) {
-    return true;
+    return options.allowEmptyScope === true;
   }
   const normalized = toolName.startsWith('tool:') ? toolName : `tool:${toolName}`;
   return scope.includes(normalized);

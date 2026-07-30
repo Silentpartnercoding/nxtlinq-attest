@@ -56,7 +56,16 @@ if (!isToolInAttestScope(toolName)) {
 ```
 
 - `getAttestScope(cwd?)` — returns `scope` array; `[]` if no manifest. Cached per cwd.
-- `isToolInAttestScope(toolName, cwd?)` — true if tool is in scope or scope is empty (backward compatible).
+- `isToolInAttestScope(toolName, cwd?, options?)` — true only when the tool is in a non-empty scope. Missing, invalid, and empty manifests fail closed.
+
+Applications migrating from the pre-1.1 permissive behavior may opt in
+temporarily and explicitly:
+
+```ts
+isToolInAttestScope(toolName, cwd, { allowEmptyScope: true });
+```
+
+Do not enable this compatibility option for security-sensitive runtimes.
 
 **Node only.** For **Python or any language**, use the **CLI** instead: run `nxtlinq-attest scope` from the agent project root; it prints the scope array as JSON to stdout (exit 0). Parse stdout once at startup and cache; use it to allow/deny tools. Same CLI works for Node if you prefer not to depend on the package.
 
