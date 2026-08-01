@@ -71,6 +71,14 @@ Do not enable this compatibility option for security-sensitive runtimes.
 
 For more detail, see the product spec (view via [README-SPEC.md](README-SPEC.md)).
 
+## Formal Verification
+
+The `formal/` directory contains a formally verified Lean model of the core
+authorization invariant: execution requires successful manifest verification,
+successful artifact verification, and a requested capability contained in the
+signed scope. The proof demonstrates the intended authorization semantics; it
+does not claim that the entire TypeScript implementation is formally verified.
+
 ## Commands
 
 | Command | Description |
@@ -87,7 +95,7 @@ For more detail, see the product spec (view via [README-SPEC.md](README-SPEC.md)
 
 ACP or other hosts can call `nxtlinq-attest authorize tool:write` at an
 observable permission boundary. Exit `0` allows; exit `2` denies. TypeScript
-hosts can use `authorizeOperation()` or `guardOperation()` from the runtime
+hosts can use `authorize()` or `executeIfAuthorized()` from the runtime
 package. The latter does not call its downstream handler after a deny.
 
 See [ACP enforcement integration](docs/acp-enforcement-integration.md) for the

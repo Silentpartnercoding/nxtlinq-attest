@@ -6,7 +6,11 @@ import test from 'node:test';
 
 import { runInit } from '../dist/commands/init.js';
 import { runSign } from '../dist/commands/sign.js';
-import { authorizeOperation, guardOperation } from '../dist/guard.js';
+import { authorize, executeIfAuthorized } from '../dist/guard.js';
+
+const vectors = JSON.parse(
+  readFileSync(new URL('./fixtures/authorization.json', import.meta.url), 'utf8'),
+);
 
 function signedProject(scope) {
   const root = mkdtempSync(join(tmpdir(), 'nxtlinq-attest-guard-'));
@@ -20,84 +24,44 @@ function signedProject(scope) {
   return root;
 }
 
-test('allowed operation reaches the protected downstream handler', async () => {
-  const root = signedProject(['tool:write']);
-  let calls = 0;
+function applyVerificationState(root, vector) {
+  if (!vector.manifestVerified) {
+    writeFileSync(join(root, 'nxtlinq', 'agent.manifest.sig'), '00'.repeat(64));
+  }
+  if (!vector.artifactVerified) {
+    writeFileSync(join(root, 'agent.js'), 'export const agent = false;\n');
+  }
+}
 
-  const result = await guardOperation(
-    { capability: 'tool:write', protocol: 'acp', resource: 'src/allowed.ts' },
-    () => {
-      calls += 1;
-      return 'written';
-    },
-    { cwd: root },
-  );
+for (const vector of vectors) {
+  test(`authorization conformance: ${vector.id}`, async () => {
+    const root = signedProject(vector.signedScope);
+    applyVerificationState(root, vector);
+    let executions = 0;
 
-  assert.equal(result.executed, true);
-  assert.equal(result.decision.outcome, 'allow');
-  assert.equal(result.value, 'written');
-  assert.equal(calls, 1);
-  assert.equal(result.decision.evidence.manifestDigest.length, 64);
-});
+    const result = await executeIfAuthorized(
+      { capability: vector.requestedCapability },
+      () => {
+        executions += 1;
+        return 'executed';
+      },
+      { cwd: root },
+    );
 
-test('denied operation never reaches the protected downstream handler', async () => {
-  const root = signedProject(['tool:read']);
-  let calls = 0;
-
-  const result = await guardOperation(
-    { capability: 'tool:write', protocol: 'acp', resource: 'src/blocked.ts' },
-    () => {
-      calls += 1;
-      return 'should-not-run';
-    },
-    { cwd: root },
-  );
-
-  assert.equal(result.executed, false);
-  assert.equal(result.decision.outcome, 'deny');
-  assert.equal(result.decision.code, 'out_of_scope');
-  assert.equal(calls, 0, 'deny must prevent downstream execution');
-});
-
-test('altered covered artifact fails closed before downstream execution', async () => {
-  const root = signedProject(['tool:write']);
-  writeFileSync(join(root, 'agent.js'), 'export const agent = false;\n');
-  let calls = 0;
-
-  const result = await guardOperation(
-    { capability: 'tool:write' },
-    () => {
-      calls += 1;
-    },
-    { cwd: root },
-  );
-
-  assert.equal(result.executed, false);
-  assert.equal(result.decision.code, 'artifact_digest_mismatch');
-  assert.equal(calls, 0);
-});
-
-test('invalid signature fails closed before downstream execution', async () => {
-  const root = signedProject(['tool:write']);
-  writeFileSync(join(root, 'nxtlinq', 'agent.manifest.sig'), '00'.repeat(64));
-  let calls = 0;
-
-  const result = await guardOperation(
-    { capability: 'tool:write' },
-    () => {
-      calls += 1;
-    },
-    { cwd: root },
-  );
-
-  assert.equal(result.executed, false);
-  assert.equal(result.decision.code, 'invalid_signature');
-  assert.equal(calls, 0);
-});
+    assert.equal(result.decision.outcome, vector.expected.outcome);
+    assert.equal(result.decision.code, vector.expected.code);
+    assert.equal(result.executed, vector.expected.executed);
+    assert.equal(executions, vector.expected.executions);
+    if (result.executed) {
+      assert.equal(result.value, 'executed');
+      assert.equal(result.decision.evidence.manifestDigest.length, 64);
+    }
+  });
+}
 
 test('authorization returns only digest evidence, not request arguments or secrets', () => {
   const root = signedProject(['tool:exec']);
-  const decision = authorizeOperation(
+  const decision = authorize(
     { capability: 'tool:exec', protocol: 'acp', sessionId: 'session-1' },
     { cwd: root },
   );

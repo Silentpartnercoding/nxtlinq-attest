@@ -18,9 +18,17 @@ export interface VerificationEvidence {
   artifactFileCount?: number;
 }
 
+export type VerificationFailureCode =
+  | 'missing_attestation_file'
+  | 'invalid_manifest'
+  | 'manifest_digest_mismatch'
+  | 'invalid_signature'
+  | 'artifact_digest_mismatch'
+  | 'artifact_file_count_mismatch';
+
 export type ProjectVerification =
   | { ok: true; manifest: AgentManifest; evidence: VerificationEvidence }
-  | { ok: false; code: string; reason: string };
+  | { ok: false; code: VerificationFailureCode; reason: string };
 
 /**
  * Verify the signed manifest and covered project artifacts without terminating

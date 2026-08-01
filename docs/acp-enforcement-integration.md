@@ -63,7 +63,7 @@ The host integration must dynamically choose the option whose `kind` is
 identifiers. A deny decision must choose `reject_once` and must not invoke any
 host-side protected downstream handler.
 
-The exported `guardOperation()` helper encodes the same invariant for
+The exported `executeIfAuthorized()` helper encodes the same invariant for
 in-process TypeScript hosts and tests: the downstream callback is invoked only
 after an allow decision.
 

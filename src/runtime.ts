@@ -83,8 +83,9 @@ export function clearAttestScopeCache(cwd?: string): void {
 }
 
 export {
-  authorizeOperation,
-  guardOperation,
+  authorize,
+  executeIfAuthorized,
+  type AuthorizationDenyCode,
   type AuthorizationDecision,
   type AuthorizationRequest,
   type GuardedOperationResult,
@@ -94,4 +95,5 @@ export {
   verifyProject,
   type ProjectVerification,
   type VerificationEvidence,
+  type VerificationFailureCode,
 } from './verification.js';
